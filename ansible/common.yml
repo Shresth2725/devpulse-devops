@@ -1,0 +1,21 @@
+- hosts: web
+  become: yes
+  tasks:
+    - name: Update apt
+      apt:
+        update_cache: yes
+
+    - name: Install Node.js
+      apt:
+        name: nodejs
+        state: present
+
+    - name: Install NVM
+      apt:
+        name: npm
+        state: present
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present

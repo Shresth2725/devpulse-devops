@@ -1,0 +1,69 @@
+- hosts: web
+  remote_user: ubuntu
+  become: yes
+
+  tasks:
+    - name: Remove old backend directory if it exists
+      file:
+        path: /home/ubuntu/backend
+        state: absent
+
+    - name: Create backend directory with correct ownership
+      file:
+        path: /home/ubuntu/backend
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Clone backend repository
+      become: false
+      git:
+        repo: https://github.com/Shresth2725/DevPulse.git
+        dest: /home/ubuntu/backend
+        version: main
+        force: yes
+
+    - name: Install backend dependencies
+      become: false
+      command: npm install --legacy-peer-deps
+      args:
+        chdir: /home/ubuntu/backend
+
+    - name: Create .env file for backend
+      become: false
+      copy:
+        dest: /home/ubuntu/backend/.env
+        content: |
+          DB_CONNECTION_STRING = "mongodb+srv://namasteDev:90MXrGdntSw0cdcM@dummydb.lcycvcb.mongodb.net/devPulse"
+
+          JWT_SECRET_KEY = "DEV@Pulse$1510"
+
+          PORT = 7777
+
+          RAZORPAY_SECRET_KEY = "LCcyjDCLQ4yoZITSIL8zSjey"
+
+          RAZORPAY_KEY_ID = "rzp_test_2gcHlSXniTxSss"
+
+          RAZORPAY_WEBHOOK_SECRET = "Devpulse@2725"
+
+          CLOUD_NAME=dh13jphq3
+
+          API_KEY=223992836535647
+
+          API_SECRET=ZBFaVIKKdkuD8w6Nu5xvISanEKs
+
+    - name: Stop backend if already running
+      become: false
+      command: pm2 delete backend
+      ignore_errors: yes
+
+    - name: Start backend with PM2
+      become: false
+      command: pm2 start ./src/app.js --name backend
+      args:
+        chdir: /home/ubuntu/backend
+
+    - name: Save PM2 process list
+      become: false
+      command: pm2 save

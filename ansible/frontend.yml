@@ -1,0 +1,82 @@
+- hosts: web
+  remote_user: ubuntu
+  become: yes
+
+  tasks:
+    - name: Remove the old frontend directory
+      file:
+        path: /home/ubuntu/frontend
+        state: absent
+
+    - name: Clone the frontend repo
+      become: false
+      git:
+        repo: https://github.com/Shresth2725/devpulse-frontend.git
+        dest: /home/ubuntu/frontend
+        version: main
+        force: yes
+
+    - name: Install frontend dependencies
+      become: false
+      command: npm install --legacy-peer-deps
+      args:
+        chdir: /home/ubuntu/frontend
+
+    - name: Build frontend
+      become: false
+      command: npm run build
+      args:
+        chdir: /home/ubuntu/frontend
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Remove default nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Copy React build to nginx root
+      copy:
+        src: /home/ubuntu/frontend/dist/
+        dest: /var/www/html/
+        remote_src: yes
+
+    - name: Configure nginx for React + API proxy
+      copy:
+        dest: /etc/nginx/sites-available/devpulse
+        content: |
+          server {
+              listen 80;
+              server_name _;
+
+              root /var/www/html;
+              index index.html;
+
+              location / {
+                  try_files $uri /index.html;
+              }
+
+              location /api/ {
+                  proxy_pass http://127.0.0.1:7777/;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade $http_upgrade;
+                  proxy_set_header Connection 'upgrade';
+                  proxy_set_header Host $host;
+                  proxy_cache_bypass $http_upgrade;
+              }
+          }
+
+    - name: Enable nginx site
+      file:
+        src: /etc/nginx/sites-available/devpulse
+        dest: /etc/nginx/sites-enabled/devpulse
+        state: link
+
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: restarted
