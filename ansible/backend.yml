@@ -53,6 +53,12 @@
 
           API_SECRET=ZBFaVIKKdkuD8w6Nu5xvISanEKs
 
+    - name: Install PM2 Globally
+      become: yes
+      npm:
+        name: pm2
+        global: yes
+
     - name: Stop backend if already running
       become: false
       command: pm2 delete backend
