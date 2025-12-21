@@ -36,6 +36,14 @@ resource "aws_security_group" "my_security_group" {
     description = "HTTP Open"
     } 
 
+  ingress  {
+    from_port = 8080
+    to_port = 8080 
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTP Open"
+    } 
+
   ingress {
     from_port = 7777
     to_port = 7777
