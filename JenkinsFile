@@ -1,21 +1,27 @@
 pipeline {
     agent any
 
+    environment {
+        TRIGGER_REPO = ''
+    }
+
     stages {
 
-        stage('Hello Jenkins') {
+        stage('Detect Trigger Repo') {
             steps {
-                sh 'echo Jenkins is working'
-            }
-        }
-
-        stage('Verify Ansible') {
-            steps {
-                sh 'ansible --version'
+                script {
+                    TRIGGER_REPO = env.GIT_URL ?: ''
+                    echo "Triggered by repo: ${TRIGGER_REPO}"
+                }
             }
         }
 
         stage('Deploy Backend') {
+            when {
+                expression {
+                    return TRIGGER_REPO.contains('devpulse-backend')
+                }
+            }
             steps {
                 sshagent(['ec2-ssh-key']) {
                     withCredentials([
@@ -31,9 +37,9 @@ pipeline {
                     ]) {
                         sh '''
                         ansible-playbook \
-                        -i ansible/infra/inventory.ini \
-                        ansible/infra/backend.yml \
-                        --ssh-extra-args='-o StrictHostKeyChecking=no'
+                          -i ansible/infra/inventory.ini \
+                          ansible/infra/backend.yml \
+                          --ssh-extra-args='-o StrictHostKeyChecking=no'
                         '''
                     }
                 }
@@ -41,6 +47,11 @@ pipeline {
         }
 
         stage('Deploy Frontend') {
+            when {
+                expression {
+                    return TRIGGER_REPO.contains('devpulse-frontend')
+                }
+            }
             steps {
                 sshagent(['ec2-ssh-key']) {
                     sh '''
