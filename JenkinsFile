@@ -10,7 +10,7 @@ pipeline {
         stage('Detect Trigger Repo') {
             steps {
                 script {
-                    TRIGGER_REPO = env.GIT_URL ?: ''
+                    TRIGGER_REPO = env.repo_name ?: ''
                     echo "Triggered by repo: ${TRIGGER_REPO}"
                 }
             }
