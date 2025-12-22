@@ -17,11 +17,6 @@ pipeline {
         }
 
         stage('Deploy Backend') {
-            when {
-                expression {
-                    return TRIGGER_REPO.contains('devpulse-backend')
-                }
-            }
             steps {
                 sshagent(['ec2-ssh-key']) {
                     withCredentials([
@@ -47,11 +42,6 @@ pipeline {
         }
 
         stage('Deploy Frontend') {
-            when {
-                expression {
-                    return TRIGGER_REPO.contains('devpulse-frontend')
-                }
-            }
             steps {
                 sshagent(['ec2-ssh-key']) {
                     sh '''
