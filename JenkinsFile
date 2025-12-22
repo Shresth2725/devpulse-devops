@@ -12,5 +12,15 @@ pipeline {
                 sh 'ansible --version'
             }
         }
+
+        stage("Deploy Backend") {
+            steps{
+                sh ''' 
+                ansible-playbook \ 
+                -i ansible/infra/inventory.ini \
+                ansible/infra/backend.yml
+                '''
+            }
+        }
     }
 }
