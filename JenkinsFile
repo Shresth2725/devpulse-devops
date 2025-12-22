@@ -2,23 +2,23 @@ pipeline {
     agent any
 
     stages {
+
         stage('Hello Jenkins') {
             steps {
                 sh 'echo Jenkins is working'
             }
         }
+
         stage('Verify Ansible') {
             steps {
                 sh 'ansible --version'
             }
         }
 
-        stage("Deploy Backend") {
-            steps{
-                sh ''' 
-                ansible-playbook \ 
-                -i ansible/infra/inventory.ini \
-                ansible/infra/backend.yml
+        stage('Deploy Backend') {
+            steps {
+                sh '''
+                ansible-playbook -i ansible/infra/inventory.ini ansible/infra/backend.yml
                 '''
             }
         }
