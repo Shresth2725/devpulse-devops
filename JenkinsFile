@@ -7,5 +7,10 @@ pipeline {
                 sh 'echo Jenkins is working'
             }
         }
+        stage('Verify Ansible') {
+            steps {
+                sh 'ansible --version'
+            }
+        }
     }
 }
