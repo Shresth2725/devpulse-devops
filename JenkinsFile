@@ -18,9 +18,13 @@ pipeline {
         stage('Deploy Backend') {
             steps {
                 sh '''
-                ansible-playbook -i ansible/infra/inventory.ini ansible/infra/backend.yml
+                ansible-playbook \
+                -i ansible/infra/inventory.ini \
+                ansible/infra/backend.yml \
+                --ssh-extra-args='-o StrictHostKeyChecking=no'
                 '''
             }
         }
+
     }
 }
