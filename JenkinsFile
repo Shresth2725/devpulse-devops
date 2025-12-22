@@ -40,6 +40,17 @@ pipeline {
             }
         }
 
-        
+        stage('Deploy Frontend') {
+            steps {
+                sshagent(['ec2-ssh-key']) {
+                    sh '''
+                    ansible-playbook \
+                      -i ansible/infra/inventory.ini \
+                      ansible/infra/frontend.yml \
+                      --ssh-extra-args='-o StrictHostKeyChecking=no'
+                    '''
+                }
+            }
+        }
     }
 }
