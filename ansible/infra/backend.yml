@@ -1,14 +1,8 @@
 - hosts: web
-  remote_user: ubuntu
   become: yes
 
   tasks:
-    - name: Remove old backend directory if it exists
-      file:
-        path: /home/ubuntu/backend
-        state: absent
-
-    - name: Create backend directory with correct ownership
+    - name: Ensure backend directory exists
       file:
         path: /home/ubuntu/backend
         state: directory
@@ -16,59 +10,58 @@
         group: ubuntu
         mode: "0755"
 
-    - name: Clone backend repository
+    - name: Pull latest backend code
       become: false
       git:
         repo: https://github.com/Shresth2725/DevPulse.git
         dest: /home/ubuntu/backend
         version: main
+        update: yes
         force: yes
-
-    - name: Install backend dependencies
-      become: false
-      command: npm install --legacy-peer-deps
-      args:
-        chdir: /home/ubuntu/backend
 
     - name: Create .env file for backend
       become: false
       copy:
         dest: /home/ubuntu/backend/.env
         content: |
-          DB_CONNECTION_STRING = "mongodb+srv://namasteDev:90MXrGdntSw0cdcM@dummydb.lcycvcb.mongodb.net/devPulse"
+          DB_CONNECTION_STRING={{ lookup('env', 'DB_CONNECTION_STRING') }}
+          JWT_SECRET_KEY={{ lookup('env', 'JWT_SECRET_KEY') }}
+          PORT={{ lookup('env', 'PORT') }}
+          RAZORPAY_SECRET_KEY={{ lookup('env', 'RAZORPAY_SECRET_KEY') }}
+          RAZORPAY_KEY_ID={{ lookup('env', 'RAZORPAY_KEY_ID') }}
+          RAZORPAY_WEBHOOK_SECRET={{ lookup('env', 'RAZORPAY_WEBHOOK_SECRET') }}
+          CLOUD_NAME={{ lookup('env', 'CLOUD_NAME') }}
+          API_KEY={{ lookup('env', 'API_KEY') }}
+          API_SECRET={{ lookup('env', 'API_SECRET') }}
 
-          JWT_SECRET_KEY = "DEV@Pulse$1510"
+    - name: Install backend dependencies
+      become: false
+      npm:
+        path: /home/ubuntu/backend
+        production: false
 
-          PORT = 7777
-
-          RAZORPAY_SECRET_KEY = "LCcyjDCLQ4yoZITSIL8zSjey"
-
-          RAZORPAY_KEY_ID = "rzp_test_2gcHlSXniTxSss"
-
-          RAZORPAY_WEBHOOK_SECRET = "Devpulse@2725"
-
-          CLOUD_NAME=dh13jphq3
-
-          API_KEY=223992836535647
-
-          API_SECRET=ZBFaVIKKdkuD8w6Nu5xvISanEKs
-
-    - name: Install PM2 Globally
-      become: yes
+    - name: Ensure PM2 is installed globally
       npm:
         name: pm2
         global: yes
 
-    - name: Stop backend if already running
+    - name: Check if backend is already running
       become: false
-      command: pm2 delete backend
-      ignore_errors: yes
+      command: pm2 list
+      register: pm2_list
+      changed_when: false
 
-    - name: Start backend with PM2
+    - name: Restart backend if already running
+      become: false
+      command: pm2 restart backend
+      when: "'backend' in pm2_list.stdout"
+
+    - name: Start backend if not running
       become: false
       command: pm2 start ./src/app.js --name backend
       args:
         chdir: /home/ubuntu/backend
+      when: "'backend' not in pm2_list.stdout"
 
     - name: Save PM2 process list
       become: false

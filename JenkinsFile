@@ -18,14 +18,28 @@ pipeline {
         stage('Deploy Backend') {
             steps {
                 sshagent(['ec2-ssh-key']) {
-                    sh '''
-                    ansible-playbook \
-                    -i ansible/infra/inventory.ini \
-                    ansible/infra/backend.yml \
-                    --ssh-extra-args='-o StrictHostKeyChecking=no'
-                    '''
+                    withCredentials([
+                        string(credentialsId: 'DB_CONNECTION_STRING', variable: 'DB_CONNECTION_STRING'),
+                        string(credentialsId: 'JWT_SECRET_KEY', variable: 'JWT_SECRET_KEY'),
+                        string(credentialsId: 'PORT', variable: 'PORT'),
+                        string(credentialsId: 'RAZORPAY_SECRET_KEY', variable: 'RAZORPAY_SECRET_KEY'),
+                        string(credentialsId: 'RAZORPAY_KEY_ID', variable: 'RAZORPAY_KEY_ID'),
+                        string(credentialsId: 'RAZORPAY_WEBHOOK_SECRET', variable: 'RAZORPAY_WEBHOOK_SECRET'),
+                        string(credentialsId: 'CLOUD_NAME', variable: 'CLOUD_NAME'),
+                        string(credentialsId: 'API_KEY', variable: 'API_KEY'),
+                        string(credentialsId: 'API_SECRET', variable: 'API_SECRET')
+                    ]) {
+                        sh '''
+                        ansible-playbook \
+                        -i ansible/infra/inventory.ini \
+                        ansible/infra/backend.yml \
+                        --ssh-extra-args='-o StrictHostKeyChecking=no'
+                        '''
+                    }
                 }
             }
         }
+
+        
     }
 }
