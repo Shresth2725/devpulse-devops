@@ -68,7 +68,7 @@ pipeline {
         stage('Deploy Backend') {
             when {
                 expression {
-                    return TRIGGER_REPO.contains('devpulse-backend')
+                    return TRIGGER_REPO.contains('DevPulse')
                 }
             }
             steps {
