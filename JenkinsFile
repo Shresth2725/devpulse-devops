@@ -59,6 +59,37 @@ pipeline {
             }
         }
 
+        /* =========================
+         * CI — FRONTEND
+         * ========================= */
+        stage('CI Frontend') {
+            when {
+                expression {
+                    return TRIGGER_REPO.contains('devpulse-frontend')
+                }
+            }
+            steps {
+                dir('frontend-ci') {
+                    deleteDir()
+
+                    git branch: 'main',
+                        url: 'https://github.com/Shresth2725/devpulse-frontend.git'
+
+                    sh '''
+                    echo "===== FRONTEND CI START ====="
+
+                    echo "Installing frontend dependencies"
+                    npm install --legacy-peer-deps
+
+                    echo "Building frontend"
+                    npm run build
+
+                    echo "===== FRONTEND CI PASSED ====="
+                    '''
+                }
+            }
+        }
+
         /*
          * =====================
          * DEPLOY BACKEND
