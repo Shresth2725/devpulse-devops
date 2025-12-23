@@ -67,3 +67,14 @@
     - name: Save PM2 process list
       become: false
       command: pm2 save
+
+    - name: Wait for backend to be healthy
+      uri:
+        url: http://127.0.0.1:7777/health
+        method: GET
+        status_code: 200
+        timeout: 5
+      register: backend_health
+      retries: 10
+      delay: 3
+      until: backend_health.status == 200
