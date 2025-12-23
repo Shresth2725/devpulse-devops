@@ -34,13 +34,14 @@
           API_KEY={{ lookup('env', 'API_KEY') }}
           API_SECRET={{ lookup('env', 'API_SECRET') }}
 
-    - name: Install backend dependencies
+    - name: Install backend dependencies (ignore peer deps)
       become: false
-      npm:
-        path: /home/ubuntu/backend
-        production: false
+      command: npm install --legacy-peer-deps
+      args:
+        chdir: /home/ubuntu/backend
 
     - name: Ensure PM2 is installed globally
+      become: yes
       npm:
         name: pm2
         global: yes
