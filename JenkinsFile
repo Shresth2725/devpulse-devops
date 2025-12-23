@@ -16,6 +16,19 @@ pipeline {
             }
         }
 
+        stage('Install Node ,NVM and All') {
+            steps {
+                sshagent(['ec2-ssh-key']) {
+                    sh '''
+                    ansible-playbook \
+                      -i ansible/infra/inventory.ini \
+                      ansible/infra/common.yml \
+                      --ssh-extra-args='-o StrictHostKeyChecking=no'
+                    '''
+                }
+            }
+        }
+
         stage('Deploy Backend') {
             steps {
                 sshagent(['ec2-ssh-key']) {
