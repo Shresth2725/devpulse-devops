@@ -33,19 +33,36 @@ pipeline {
             steps {
                 dir('backend-ci') {
                     git branch: 'main',
-                        url: 'https://github.com/Shresth2725/DevPulse.git'
+                        url: 'https://github.com/Shresth2725/devpulse-backend.git'
 
                     sh '''
-                    echo "Running Backend CI"
+                    echo "===== BACKEND CI START ====="
 
+                    echo "1. Installing dependencies"
                     npm install --legacy-peer-deps
 
-                    echo "Running backend syntax check"
-                    node --check src/app.js
+                    echo "2. Checking package.json integrity"
+                    node -e "require('./package.json')"
+
+                    echo "3. Validating imports and module resolution"
+                    node -e "import('./src/app.js')"
+
+                    echo "4. Runtime safety check (dry boot)"
+                    node -e "
+                    import('./src/app.js')
+                        .then(() => console.log('App loaded successfully'))
+                        .catch(err => {
+                        console.error(err);
+                        process.exit(1);
+                        })
+                    "
+
+                    echo "===== BACKEND CI PASSED ====="
                     '''
                 }
             }
         }
+
 
         stage('Deploy Backend') {
             steps {
