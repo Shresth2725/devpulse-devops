@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         TRIGGER_REPO = ''
+        CI = 'true'
     }
 
     stages {
@@ -10,8 +11,8 @@ pipeline {
         stage('Detect Trigger Repo') {
             steps {
                 script {
-                    TRIGGER_REPO = env.repo_name ?: ''
-                    echo "Triggered by repo: ${TRIGGER_REPO}"
+                    env.TRIGGER_REPO = env.repo_name ?: ''
+                    echo "Triggered by repo: ${env.TRIGGER_REPO}"
                 }
             }
         }
@@ -32,37 +33,65 @@ pipeline {
         stage('CI Backend') {
             steps {
                 dir('backend-ci') {
+
+                    deleteDir()
+
                     git branch: 'main',
-                        url: 'https://github.com/Shresth2725/devpulse-backend.git'
+                        url: 'https://github.com/Shresth2725/devpulse-backend.git',
+                        credentialsId: 'github-pat'
 
-                    sh '''
-                    echo "===== BACKEND CI START ====="
+                    withCredentials([
+                        string(credentialsId: 'DB_CONNECTION_STRING', variable: 'DB_CONNECTION_STRING'),
+                        string(credentialsId: 'JWT_SECRET_KEY', variable: 'JWT_SECRET_KEY'),
+                        string(credentialsId: 'PORT', variable: 'PORT'),
+                        string(credentialsId: 'RAZORPAY_SECRET_KEY', variable: 'RAZORPAY_SECRET_KEY'),
+                        string(credentialsId: 'RAZORPAY_KEY_ID', variable: 'RAZORPAY_KEY_ID'),
+                        string(credentialsId: 'RAZORPAY_WEBHOOK_SECRET', variable: 'RAZORPAY_WEBHOOK_SECRET'),
+                        string(credentialsId: 'CLOUD_NAME', variable: 'CLOUD_NAME'),
+                        string(credentialsId: 'API_KEY', variable: 'API_KEY'),
+                        string(credentialsId: 'API_SECRET', variable: 'API_SECRET')
+                    ]) {
+                        sh '''
+                        echo "===== BACKEND CI START ====="
 
-                    echo "1. Installing dependencies"
-                    npm install --legacy-peer-deps
+                        echo "Creating .env for CI"
+                        cat > .env << EOF
+                        DB_CONNECTION_STRING=$DB_CONNECTION_STRING
+                        JWT_SECRET_KEY=$JWT_SECRET_KEY
+                        PORT=$PORT
+                        RAZORPAY_SECRET_KEY=$RAZORPAY_SECRET_KEY
+                        RAZORPAY_KEY_ID=$RAZORPAY_KEY_ID
+                        RAZORPAY_WEBHOOK_SECRET=$RAZORPAY_WEBHOOK_SECRET
+                        CLOUD_NAME=$CLOUD_NAME
+                        API_KEY=$API_KEY
+                        API_SECRET=$API_SECRET
+                        EOF
 
-                    echo "2. Checking package.json integrity"
-                    node -e "require('./package.json')"
+                        echo "Installing dependencies"
+                        npm install --legacy-peer-deps
 
-                    echo "3. Validating imports and module resolution"
-                    node -e "import('./src/app.js')"
+                        echo "Checking package.json"
+                        node -e "require('./package.json')"
 
-                    echo "4. Runtime safety check (dry boot)"
-                    node -e "
-                    import('./src/app.js')
-                        .then(() => console.log('App loaded successfully'))
-                        .catch(err => {
-                        console.error(err);
-                        process.exit(1);
-                        })
-                    "
+                        echo "Validating entry file"
+                        test -f src/app.js
 
-                    echo "===== BACKEND CI PASSED ====="
-                    '''
+                        echo "Runtime load test"
+                        node -e "
+                          import('./src/app.js')
+                            .then(() => console.log('App loaded successfully'))
+                            .catch(err => {
+                              console.error(err);
+                              process.exit(1);
+                            })
+                        "
+
+                        echo "===== BACKEND CI PASSED ====="
+                        '''
+                    }
                 }
             }
         }
-
 
         stage('Deploy Backend') {
             steps {
