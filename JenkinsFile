@@ -33,7 +33,7 @@ pipeline {
             steps {
                 dir('backend-ci') {
                     git branch: 'main',
-                        url: 'https://github.com/Shresth2725/devpulse-backend.git'
+                        url: 'https://github.com/Shresth2725/DevPulse.git'
 
                     sh '''
                     echo "Running Backend CI"
