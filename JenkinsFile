@@ -32,6 +32,7 @@ pipeline {
         stage('CI Backend') {
             steps {
                 dir('backend-ci') {
+
                     deleteDir()
 
                     git branch: 'main',
@@ -40,13 +41,18 @@ pipeline {
                     sh '''
                     echo "Running Backend CI"
 
+                    # install dependencies (handle peer conflicts)
                     npm install --legacy-peer-deps
 
-                    echo "CI finished successfully"
+                    # syntax check only (does NOT start server)
+                    node -c src/app.js
+
+                    echo "Backend CI passed"
                     '''
                 }
             }
         }
+
 
 
 

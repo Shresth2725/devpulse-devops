@@ -1,5 +1,6 @@
 - hosts: jenkins
   become: yes
+
   tasks:
     - name: Update apt cache
       apt:
@@ -11,6 +12,27 @@
           - openjdk-17-jdk
           - curl
         state: present
+
+    - name: Add NodeSource repository (Node.js 18)
+      shell: |
+        curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+      args:
+        creates: /etc/apt/sources.list.d/nodesource.list
+
+    - name: Install Node.js and npm
+      apt:
+        name: nodejs
+        state: present
+
+    - name: Verify Node.js installation
+      command: node -v
+      register: node_version
+      changed_when: false
+
+    - name: Verify npm installation
+      command: npm -v
+      register: npm_version
+      changed_when: false
 
     - name: Download Jenkins GPG key
       shell: |
