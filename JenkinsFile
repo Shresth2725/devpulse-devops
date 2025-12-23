@@ -22,7 +22,7 @@ pipeline {
          * =====================
          */
 
-        stage('CI Backend') {
+        stage('CI Backend and Health Check') {
             when {
                 expression {
                     return TRIGGER_REPO.contains('DevPulse')
@@ -62,7 +62,7 @@ pipeline {
         /* =========================
          * CI — FRONTEND
          * ========================= */
-        stage('CI Frontend') {
+        stage('CI Frontend and Health Check') {
             when {
                 expression {
                     return TRIGGER_REPO.contains('devpulse-frontend')
