@@ -29,6 +29,27 @@ pipeline {
             }
         }
 
+        stage('CI Backend') {
+            steps {
+                dir('backend-ci') {
+                    deleteDir()
+
+                    git branch: 'main',
+                        url: 'https://github.com/Shresth2725/DevPulse.git'
+
+                    sh '''
+                    echo "Running Backend CI"
+
+                    npm install --legacy-peer-deps
+
+                    echo "CI finished successfully"
+                    '''
+                }
+            }
+        }
+
+
+
         stage('Deploy Backend') {
             steps {
                 sshagent(['ec2-ssh-key']) {
