@@ -32,29 +32,20 @@ pipeline {
         stage('CI Backend') {
             steps {
                 dir('backend-ci') {
-
-                    deleteDir()
-
                     git branch: 'main',
-                        url: 'https://github.com/Shresth2725/DevPulse.git'
+                        url: 'https://github.com/Shresth2725/devpulse-backend.git'
 
                     sh '''
                     echo "Running Backend CI"
 
-                    # install dependencies (handle peer conflicts)
                     npm install --legacy-peer-deps
 
-                    # syntax check only (does NOT start server)
-                    node -c src/app.js
-
-                    echo "Backend CI passed"
+                    echo "Running backend syntax check"
+                    node --check src/app.js
                     '''
                 }
             }
         }
-
-
-
 
         stage('Deploy Backend') {
             steps {
