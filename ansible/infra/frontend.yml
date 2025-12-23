@@ -80,3 +80,15 @@
       service:
         name: nginx
         state: restarted
+
+    - name: Wait for frontend to be healthy
+      uri:
+        url: http://127.0.0.1/
+        method: GET
+        status_code: 200
+        return_content: yes
+        timeout: 5
+      register: frontend_health
+      retries: 10
+      delay: 3
+      until: frontend_health.status == 200
