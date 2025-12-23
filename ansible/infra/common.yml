@@ -1,21 +1,30 @@
 - hosts: web
   become: yes
   tasks:
-    - name: Update apt
+    - name: Update apt cache
       apt:
         update_cache: yes
 
-    - name: Install Node.js
-      apt:
-        name: nodejs
-        state: present
+    - name: Check if Node.js is installed
+      command: node -v
+      register: node_check
+      ignore_errors: yes
 
-    - name: Install NVM
+    - name: Install Node.js and npm (only if missing)
       apt:
-        name: npm
+        name:
+          - nodejs
+          - npm
         state: present
+      when: node_check.failed
 
-    - name: Install Nginx
+    - name: Check if Nginx is installed
+      command: nginx -v
+      register: nginx_check
+      ignore_errors: yes
+
+    - name: Install Nginx (only if missing)
       apt:
         name: nginx
         state: present
+      when: nginx_check.failed
