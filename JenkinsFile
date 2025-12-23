@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         TRIGGER_REPO = ''
-        CI = 'true'
     }
 
     stages {
@@ -11,89 +10,67 @@ pipeline {
         stage('Detect Trigger Repo') {
             steps {
                 script {
-                    env.TRIGGER_REPO = env.repo_name ?: ''
-                    echo "Triggered by repo: ${env.TRIGGER_REPO}"
+                    TRIGGER_REPO = env.repo_name ?: env.GIT_URL ?: ''
+                    echo "Triggered by repo: ${TRIGGER_REPO}"
                 }
             }
         }
 
-        stage('Install Node ,NVM and Nginx') {
+        /*
+         * =====================
+         * CI STAGE (BACKEND)
+         * =====================
+         */
+
+        stage('CI Backend') {
+            when {
+                expression {
+                    return TRIGGER_REPO.contains('DevPulse')
+                }
+            }
             steps {
-                sshagent(['ec2-ssh-key']) {
+                dir('backend-ci') {
+                    deleteDir()
+
+                    git branch: 'main',
+                        url: 'https://github.com/Shresth2725/DevPulse.git'
+
                     sh '''
-                    ansible-playbook \
-                      -i ansible/infra/inventory.ini \
-                      ansible/infra/common.yml \
-                      --ssh-extra-args='-o StrictHostKeyChecking=no'
+                    echo "===== BACKEND CI START ====="
+
+                    npm install --legacy-peer-deps
+
+                    echo "Validating package.json"
+                    node -e "require('./package.json')"
+
+                    echo "Validating imports and runtime load"
+                    node -e "
+                    import('./src/app.js')
+                        .then(() => console.log('Backend loaded successfully'))
+                        .catch(err => {
+                        console.error(err);
+                        process.exit(1);
+                        })
+                    "
+
+                    echo "===== BACKEND CI PASSED ====="
                     '''
                 }
             }
         }
 
-        stage('CI Backend') {
-            steps {
-                dir('backend-ci') {
-
-                    deleteDir()
-
-                    git branch: 'main',
-                        url: 'https://github.com/Shresth2725/devpulse-backend.git',
-                        credentialsId: 'github-pat'
-
-                    withCredentials([
-                        string(credentialsId: 'DB_CONNECTION_STRING', variable: 'DB_CONNECTION_STRING'),
-                        string(credentialsId: 'JWT_SECRET_KEY', variable: 'JWT_SECRET_KEY'),
-                        string(credentialsId: 'PORT', variable: 'PORT'),
-                        string(credentialsId: 'RAZORPAY_SECRET_KEY', variable: 'RAZORPAY_SECRET_KEY'),
-                        string(credentialsId: 'RAZORPAY_KEY_ID', variable: 'RAZORPAY_KEY_ID'),
-                        string(credentialsId: 'RAZORPAY_WEBHOOK_SECRET', variable: 'RAZORPAY_WEBHOOK_SECRET'),
-                        string(credentialsId: 'CLOUD_NAME', variable: 'CLOUD_NAME'),
-                        string(credentialsId: 'API_KEY', variable: 'API_KEY'),
-                        string(credentialsId: 'API_SECRET', variable: 'API_SECRET')
-                    ]) {
-                        sh '''
-                        echo "===== BACKEND CI START ====="
-
-                        echo "Creating .env for CI"
-                        cat > .env << EOF
-                        DB_CONNECTION_STRING=$DB_CONNECTION_STRING
-                        JWT_SECRET_KEY=$JWT_SECRET_KEY
-                        PORT=$PORT
-                        RAZORPAY_SECRET_KEY=$RAZORPAY_SECRET_KEY
-                        RAZORPAY_KEY_ID=$RAZORPAY_KEY_ID
-                        RAZORPAY_WEBHOOK_SECRET=$RAZORPAY_WEBHOOK_SECRET
-                        CLOUD_NAME=$CLOUD_NAME
-                        API_KEY=$API_KEY
-                        API_SECRET=$API_SECRET
-                        EOF
-
-                        echo "Installing dependencies"
-                        npm install --legacy-peer-deps
-
-                        echo "Checking package.json"
-                        node -e "require('./package.json')"
-
-                        echo "Validating entry file"
-                        test -f src/app.js
-
-                        echo "Runtime load test"
-                        node -e "
-                          import('./src/app.js')
-                            .then(() => console.log('App loaded successfully'))
-                            .catch(err => {
-                              console.error(err);
-                              process.exit(1);
-                            })
-                        "
-
-                        echo "===== BACKEND CI PASSED ====="
-                        '''
-                    }
-                }
-            }
-        }
+        /*
+         * =====================
+         * DEPLOY BACKEND
+         * =====================
+         */
 
         stage('Deploy Backend') {
+            when {
+                expression {
+                    return TRIGGER_REPO.contains('devpulse-backend')
+                }
+            }
             steps {
                 sshagent(['ec2-ssh-key']) {
                     withCredentials([
@@ -118,7 +95,18 @@ pipeline {
             }
         }
 
+        /*
+         * =====================
+         * DEPLOY FRONTEND
+         * =====================
+         */
+
         stage('Deploy Frontend') {
+            when {
+                expression {
+                    return TRIGGER_REPO.contains('devpulse-frontend')
+                }
+            }
             steps {
                 sshagent(['ec2-ssh-key']) {
                     sh '''
