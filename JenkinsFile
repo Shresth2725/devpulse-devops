@@ -16,7 +16,7 @@ pipeline {
             }
         }
 
-        stage('Install Node ,NVM and All') {
+        stage('Install Node ,NVM and Nginx') {
             steps {
                 sshagent(['ec2-ssh-key']) {
                     sh '''
